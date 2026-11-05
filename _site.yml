@@ -1,0 +1,19 @@
+name: "Yulin Zhu"
+output_dir: "docs"
+
+navbar:
+  title: "Yulin Zhu"
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "Resume"
+      href: resume.html
+    - text: "Dashboard"
+      href: dashboard.html
+  right:
+    - icon: fa-github
+      href: https://github.com/zhuyulin0402-design
+
+output:
+  html_document:
+    theme: cosmo
