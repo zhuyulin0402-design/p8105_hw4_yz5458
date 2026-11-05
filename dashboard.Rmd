@@ -1,30 +1,130 @@
 ---
-title: "dashboard.Rmd"
+title: "NY NOAA Weather Dashboard"
 author: "Yulin Zhu"
 date: "2026-11-05"
-output: html_document
+output:
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(plotly)
+library(p8105.datasets)
+
+data("ny_noaa")
+
+noaa_df =
+  ny_noaa |>
+  mutate(
+    year = lubridate::year(date),
+    month = lubridate::month(
+      date,
+      label = TRUE
+    ),
+    tmax = as.numeric(tmax) / 10,
+    tmin = as.numeric(tmin) / 10,
+    prcp = prcp / 10
+  )
 ```
 
-## R Markdown
+#Maximum vs Minimum Temperature
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r}
+temp_scatter =
+  noaa_df |>
+  filter(
+    !is.na(tmax),
+    !is.na(tmin)
+  ) |>
+  slice_sample(n = 5000) |>
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_point(alpha = 0.35) +
+  labs(
+    x = "Minimum Temperature (°C)",
+    y = "Maximum Temperature (°C)",
+    title = "Maximum vs Minimum Temperature"
+  ) +
+  theme_minimal()
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+ggplotly(temp_scatter)
 ```
 
-## Including Plots
+### Average Maximum Temperature by Month
 
-You can also embed plots, for example:
+```{r}
+monthly_temp =
+  noaa_df |>
+  group_by(month) |>
+  summarize(
+    mean_tmax = mean(
+      tmax,
+      na.rm = TRUE
+    ),
+    .groups = "drop"
+  )
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+temp_line =
+  ggplot(
+    monthly_temp,
+    aes(
+      x = month,
+      y = mean_tmax,
+      group = 1
+    )
+  ) +
+  geom_line() +
+  geom_point() +
+  labs(
+    x = "Month",
+    y = "Average Maximum Temperature (°C)",
+    title = "Average Maximum Temperature by Month"
+  ) +
+  theme_minimal()
+
+ggplotly(temp_line)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+#Snowfall Distribution
+```{r}
+snow_histogram =
+  noaa_df |>
+  filter(snow > 0, snow < 100) |>
+  ggplot(aes(x = snow)) +
+  geom_histogram(bins = 30) +
+  labs(
+    x = "Snowfall (mm)",
+    y = "Number of Observations",
+    title = "Distribution of Positive Snowfall"
+  ) +
+  theme_minimal()
+
+ggplotly(snow_histogram)
+```
+
+#Average Precipitation by Month
+
+```{r}
+monthly_prcp =
+  noaa_df |>
+  group_by(month) |>
+  summarize(
+    mean_prcp = mean(
+      prcp,
+      na.rm = TRUE
+    ),
+    .groups = "drop"
+  )
+
+prcp_bar = ggplot(monthly_prcp, aes(x = month, y = mean_prcp)) +
+  geom_col() +
+  labs(
+    x = "Month",
+    y = "Average Precipitation (mm)",
+    title = "Average Precipitation by Month"
+  ) +
+  theme_minimal()
+
+ggplotly(prcp_bar)
+```
